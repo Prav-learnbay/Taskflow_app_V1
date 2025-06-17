@@ -25,7 +25,7 @@ A modern task management application built with Next.js, TypeScript, and Tailwin
 
 1. Clone the repository:
 ```bash
-git clone [repository-url]
+git clone https://github.com/Prav-learnbay/Taskflow_app_V1.git
 ```
 
 2. Install dependencies:
