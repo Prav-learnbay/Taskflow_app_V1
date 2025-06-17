@@ -7,66 +7,52 @@ import type { Task } from "./types"
 
 const STORAGE_KEY = "todo-app-tasks"
 
+// Mock data for development
+let tasks: Task[] = []
+
 export async function getTasks(): Promise<Task[]> {
-  if (typeof window === "undefined") {
-    return []
-  }
-
-  try {
-    const tasks = localStorage.getItem(STORAGE_KEY)
-    return tasks ? JSON.parse(tasks) : []
-  } catch (error) {
-    console.error("Error getting tasks:", error)
-    return []
-  }
+  // Simulate API delay
+  await new Promise((resolve) => setTimeout(resolve, 500))
+  return [...tasks]
 }
 
-export async function addTask(task: Task): Promise<void> {
-  if (typeof window === "undefined") {
-    return
-  }
-
-  try {
-    const tasks = await getTasks()
-    tasks.push(task)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
-  } catch (error) {
-    console.error("Error adding task:", error)
-    throw error
-  }
+export async function getTask(id: string): Promise<Task | null> {
+  const task = tasks.find((t) => t.id === id)
+  return task || null
 }
 
-export async function updateTask(updatedTask: Task): Promise<void> {
-  if (typeof window === "undefined") {
-    return
+export async function createTask(task: Omit<Task, "id" | "createdAt" | "updatedAt" | "completedAt">): Promise<Task> {
+  const newTask = {
+    ...task,
+    id: Date.now().toString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    completedAt: null,
   }
-
-  try {
-    const tasks = await getTasks()
-    const index = tasks.findIndex((task) => task.id === updatedTask.id)
-
-    if (index !== -1) {
-      tasks[index] = updatedTask
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks))
-    }
-  } catch (error) {
-    console.error("Error updating task:", error)
-    throw error
-  }
+  tasks.push(newTask)
+  return newTask
 }
 
-export async function deleteTask(taskId: string): Promise<void> {
-  if (typeof window === "undefined") {
-    return
+export async function updateTask(id: string, updates: Partial<Task>): Promise<Task> {
+  const taskIndex = tasks.findIndex((t) => t.id === id)
+  if (taskIndex === -1) {
+    throw new Error("Task not found")
   }
 
-  try {
-    const tasks = await getTasks()
-    const filteredTasks = tasks.filter((task) => task.id !== taskId)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredTasks))
-  } catch (error) {
-    console.error("Error deleting task:", error)
-    throw error
+  const updatedTask = {
+    ...tasks[taskIndex],
+    ...updates,
+    updatedAt: new Date().toISOString(),
   }
+  tasks[taskIndex] = updatedTask
+  return updatedTask
+}
+
+export async function deleteTask(id: string): Promise<void> {
+  const taskIndex = tasks.findIndex((t) => t.id === id)
+  if (taskIndex === -1) {
+    throw new Error("Task not found")
+  }
+  tasks.splice(taskIndex, 1)
 }
 

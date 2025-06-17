@@ -5,66 +5,98 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { useForm } from "react-hook-form"
 import { addTask } from "@/lib/tasks"
 import { Checkbox } from "@/components/ui/checkbox"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 
-type FormValues = {
-  title: string
-  priority: string
-  status: string
-  dueDate: string
-  collaborator: string
-  isUrgent: boolean
-  isImportant: boolean
-  category: string
-}
+const formSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  status: z.enum(["pending", "in-progress", "completed"]),
+  priority: z.enum(["low", "medium", "high"]),
+  dueDate: z.string(),
+  department: z.string(),
+  services: z.array(z.string()),
+  zone: z.string(),
+  siteName: z.string(),
+  taskOwner: z.string(),
+  city: z.string(),
+  isUrgent: z.boolean(),
+  isImportant: z.boolean(),
+})
+
+type FormValues = z.infer<typeof formSchema>
 
 export function AddTaskForm() {
   const [isLoading, setIsLoading] = useState(false)
+  const [isUrgent, setIsUrgent] = useState(false)
+  const [isImportant, setIsImportant] = useState(false)
 
   const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      priority: "medium",
-      status: "todo",
-      dueDate: new Date().toISOString().split("T")[0],
-      collaborator: "",
+      title: '',
+      description: '',
+      status: 'pending',
+      priority: 'medium',
+      dueDate: new Date().toISOString().split('T')[0],
+      department: '',
+      services: [],
+      zone: '',
+      siteName: '',
+      taskOwner: '',
+      city: '',
       isUrgent: false,
       isImportant: false,
-      category: "",
     },
   })
 
   const onSubmit = async (data: FormValues) => {
-    setIsLoading(true)
     try {
+      setIsLoading(true)
       await addTask({
         id: Date.now().toString(),
         title: data.title,
-        priority: data.priority as "low" | "medium" | "high",
-        status: data.status as "todo" | "in-progress" | "completed",
+        description: data.description || '',
+        status: data.status,
+        priority: data.priority,
         dueDate: data.dueDate,
-        collaborator: data.collaborator,
+        department: data.department,
+        services: data.services,
+        zone: data.zone,
+        siteName: data.siteName,
+        taskOwner: data.taskOwner,
+        city: data.city,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         completedAt: null,
         isUrgent: data.isUrgent,
         isImportant: data.isImportant,
-        category: data.category,
+        notes: [],
+        attachments: []
       })
       form.reset({
-        title: "",
-        priority: "medium",
-        status: "todo",
-        dueDate: new Date().toISOString().split("T")[0],
-        collaborator: "",
+        title: '',
+        description: '',
+        status: 'pending',
+        priority: 'medium',
+        dueDate: new Date().toISOString().split('T')[0],
+        department: '',
+        services: [],
+        zone: '',
+        siteName: '',
+        taskOwner: '',
+        city: '',
         isUrgent: false,
         isImportant: false,
-        category: "",
       })
     } catch (error) {
-      console.error("Failed to add task:", error)
+      console.error('Error adding task:', error)
     } finally {
       setIsLoading(false)
     }
@@ -150,12 +182,192 @@ export function AddTaskForm() {
 
             <FormField
               control={form.control}
-              name="collaborator"
+              name="taskOwner"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Collaborator</FormLabel>
+                  <FormLabel>Task Owner</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter collaborator name" {...field} />
+                    <Input placeholder="Enter task owner name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="department"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Department</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="it">IT</SelectItem>
+                      <SelectItem value="hr">HR</SelectItem>
+                      <SelectItem value="finance">Finance</SelectItem>
+                      <SelectItem value="marketing">Marketing</SelectItem>
+                      <SelectItem value="operations">Operations</SelectItem>
+                      <SelectItem value="sales">Sales</SelectItem>
+                      <SelectItem value="onboarding">Onboarding</SelectItem>
+                      <SelectItem value="hiring">Hiring</SelectItem>
+                      <SelectItem value="legal">Legal</SelectItem>
+                      <SelectItem value="deboarding">Deboarding</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="services"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Services</FormLabel>
+                  <Select
+                    onValueChange={(value) => field.onChange([value])}
+                    defaultValue={field.value?.[0]}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select services" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="security">Security</SelectItem>
+                      <SelectItem value="housekeeping">Housekeeping</SelectItem>
+                      <SelectItem value="gardening">Gardening</SelectItem>
+                      <SelectItem value="pest-control">Pest Control</SelectItem>
+                      <SelectItem value="stp">STP</SelectItem>
+                      <SelectItem value="wtp">WTP</SelectItem>
+                      <SelectItem value="swimming-pool">Swimming Pool</SelectItem>
+                      <SelectItem value="electrical">Electrical</SelectItem>
+                      <SelectItem value="plumbing">Plumbing</SelectItem>
+                      <SelectItem value="management">Management</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="zone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Zone</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select zone" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="north">North Zone</SelectItem>
+                      <SelectItem value="south">South Zone</SelectItem>
+                      <SelectItem value="east">East Zone</SelectItem>
+                      <SelectItem value="west">West Zone</SelectItem>
+                      <SelectItem value="central">Central Zone</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="siteName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Site Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter site name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="city"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>City</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select city" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="chennai">Chennai</SelectItem>
+                      <SelectItem value="bangalore">Bangalore</SelectItem>
+                      <SelectItem value="hyderabad">Hyderabad</SelectItem>
+                      <SelectItem value="vijaywada">Vijaywada</SelectItem>
+                      <SelectItem value="pune">Pune</SelectItem>
+                      <SelectItem value="delhi">Delhi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="isUrgent"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-center p-4 border rounded-lg bg-destructive/5 hover:bg-destructive/10 transition-colors">
+                  <FormControl>
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className="h-5 w-5"
+                      />
+                      <Label className="text-lg font-medium text-destructive cursor-pointer">Urgent</Label>
+                    </div>
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="isImportant"
+              render={({ field }) => (
+                <FormItem className="flex items-center justify-center p-4 border rounded-lg bg-primary/5 hover:bg-primary/10 transition-colors">
+                  <FormControl>
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className="h-5 w-5"
+                      />
+                      <Label className="text-lg font-medium text-primary cursor-pointer">Important</Label>
+                    </div>
                   </FormControl>
                 </FormItem>
               )}
@@ -164,68 +376,69 @@ export function AddTaskForm() {
 
           <FormField
             control={form.control}
-            name="category"
+            name="description"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Category</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">None</SelectItem>
-                    <SelectItem value="purchase">Purchase</SelectItem>
-                    <SelectItem value="renewals">Renewals</SelectItem>
-                    <SelectItem value="bill-payments">Bill Payments</SelectItem>
-                    <SelectItem value="outings">Outings</SelectItem>
-                    <SelectItem value="routines">Routines</SelectItem>
-                    <SelectItem value="family-time">Family Time</SelectItem>
-                  </SelectContent>
-                </Select>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                  <div className="space-y-2">
+                    <Textarea
+                      placeholder="Enter task description"
+                      className="min-h-[100px]"
+                      {...field}
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.multiple = true;
+                          input.onchange = (e) => {
+                            const files = (e.target as HTMLInputElement).files;
+                            if (files) {
+                              // Handle file upload here
+                              console.log('Files selected:', files);
+                            }
+                          };
+                          input.click();
+                        }}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="lucide lucide-paperclip"
+                        >
+                          <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                        </svg>
+                        Attach Files
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        Upload images, documents, or other files
+                      </span>
+                    </div>
+                  </div>
+                </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <FormField
-              control={form.control}
-              name="isImportant"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Important</FormLabel>
-                    <p className="text-sm text-muted-foreground">This task is important for long-term goals</p>
-                  </div>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="isUrgent"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>Urgent</FormLabel>
-                    <p className="text-sm text-muted-foreground">This task requires immediate attention</p>
-                  </div>
-                </FormItem>
-              )}
-            />
+          <div className="flex justify-end">
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Adding..." : "Add Task"}
+            </Button>
           </div>
-
-          <Button type="submit" disabled={isLoading}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Task
-          </Button>
         </form>
       </Form>
     </div>

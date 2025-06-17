@@ -1,225 +1,206 @@
 "use client"
 
 import { useState } from "react"
-import type { Task } from "@/lib/types"
-import { updateTask, deleteTask } from "@/lib/tasks"
-import { formatDate } from "@/lib/utils"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Task } from "@/lib/types"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Calendar, CheckCircle, Clock, Edit, Flag, Trash, User, AlertTriangle, CheckSquare } from "lucide-react"
-import { CategoryIcon } from "@/components/category-icon"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { Calendar, Clock, User, Building, Wrench, MapPin, Home, Map, MessageSquare } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
 
 interface TaskItemProps {
   task: Task
-  onUpdate: (task: Task) => void
+  onStatusChange: (taskId: string, status: Task["status"]) => void
   onDelete: (taskId: string) => void
+  onSelect: () => void
+  isSelected: boolean
 }
 
-export function TaskItem({ task, onUpdate, onDelete }: TaskItemProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [status, setStatus] = useState(task.status)
-  const [priority, setPriority] = useState(task.priority)
-
-  const handleStatusChange = async (newStatus: string) => {
-    const updatedTask: Task = {
-      ...task,
-      status: newStatus as "todo" | "in-progress" | "completed",
-      completedAt: newStatus === "completed" ? new Date().toISOString() : null,
-    }
-
-    try {
-      await updateTask(updatedTask)
-      setStatus(newStatus as "todo" | "in-progress" | "completed")
-      onUpdate(updatedTask)
-    } catch (error) {
-      console.error("Failed to update task status:", error)
-    }
-  }
-
-  const handlePriorityChange = async (newPriority: string) => {
-    const updatedTask: Task = {
-      ...task,
-      priority: newPriority as "low" | "medium" | "high",
-    }
-
-    try {
-      await updateTask(updatedTask)
-      setPriority(newPriority as "low" | "medium" | "high")
-      onUpdate(updatedTask)
-    } catch (error) {
-      console.error("Failed to update task priority:", error)
-    }
-  }
+export function TaskItem({ task, onStatusChange, onDelete, onSelect, isSelected }: TaskItemProps) {
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showNotes, setShowNotes] = useState(false)
+  const [newNote, setNewNote] = useState("")
 
   const handleDelete = async () => {
+    setIsDeleting(true)
     try {
-      await deleteTask(task.id)
-      onDelete(task.id)
-    } catch (error) {
-      console.error("Failed to delete task:", error)
+      await onDelete(task.id)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "high":
-        return "text-red-500"
-      case "medium":
-        return "text-yellow-500"
-      case "low":
-        return "text-green-500"
-      default:
-        return ""
+  const handleAddNote = async () => {
+    if (!newNote.trim()) return
+    const newNoteObj = {
+      id: Date.now().toString(),
+      content: newNote,
+      createdAt: new Date().toISOString(),
+      createdBy: "Current User",
     }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "text-green-500"
-      case "in-progress":
-        return "text-blue-500"
-      case "todo":
-        return "text-gray-500"
-      default:
-        return ""
-    }
+    const updatedNotes = [...(task.notes || []), newNoteObj]
+    onStatusChange(task.id, task.status)
+    setNewNote("")
   }
 
   return (
-    <Card>
-      <CardHeader className="p-4 pb-2">
-        <div className="flex justify-between items-start">
-          <h3 className="font-medium text-lg">{task.title}</h3>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setIsEditing(!isEditing)}>
-              <Edit className="h-4 w-4" />
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Trash className="h-4 w-4 text-red-500" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete this task? This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+    <Card className={`${isSelected ? 'border-primary' : ''}`}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{task.title}</CardTitle>
+        <div className="flex items-center gap-2">
+          <Select
+            value={task.status}
+            onValueChange={(value: Task["status"]) => onStatusChange(task.id, value)}
+          >
+            <SelectTrigger className="w-[130px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="in-progress">In Progress</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                </svg>
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the task.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} disabled={isDeleting}>
+                  {isDeleting ? "Deleting..." : "Delete"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </CardHeader>
-      <CardContent className="p-4 pt-0 pb-2">
-        <div className="flex flex-wrap gap-4 text-sm">
-          <div className="flex items-center gap-1">
-            <Calendar className="h-4 w-4 text-gray-500" />
-            <span>Due: {formatDate(task.dueDate)}</span>
-          </div>
-          {task.collaborator && (
-            <div className="flex items-center gap-1">
-              <User className="h-4 w-4 text-gray-500" />
-              <span>{task.collaborator}</span>
-            </div>
+      <CardContent>
+        <div className="text-sm text-muted-foreground mb-4">{task.description}</div>
+        <div className="flex flex-wrap gap-2 mb-4">
+          <Badge variant={task.priority === "high" ? "destructive" : "secondary"}>
+            {task.priority}
+          </Badge>
+          <Badge variant="outline">
+            <Calendar className="h-3 w-3 mr-1" />
+            {new Date(task.dueDate).toLocaleDateString()}
+          </Badge>
+          <Badge variant="outline">
+            <Clock className="h-3 w-3 mr-1" />
+            {new Date(task.dueDate).toLocaleTimeString()}
+          </Badge>
+          <Badge variant="outline">
+            <User className="h-3 w-3 mr-1" />
+            {task.taskOwner}
+          </Badge>
+          {task.department && (
+            <Badge variant="outline">
+              <Building className="h-3 w-3 mr-1" />
+              {task.department}
+            </Badge>
           )}
-          {task.category && (
-            <div className="flex items-center gap-1">
-              <CategoryIcon category={task.category} className="h-4 w-4 text-gray-500" />
-              <span className="capitalize">{task.category.replace("-", " ")}</span>
-            </div>
+          {task.services && task.services.length > 0 && (
+            <Badge variant="outline">
+              <Wrench className="h-3 w-3 mr-1" />
+              {task.services.join(", ")}
+            </Badge>
           )}
-          {task.completedAt && (
-            <div className="flex items-center gap-1">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <span>Completed: {formatDate(task.completedAt)}</span>
-            </div>
+          {task.zone && (
+            <Badge variant="outline">
+              <MapPin className="h-3 w-3 mr-1" />
+              {task.zone}
+            </Badge>
           )}
-          {!task.completedAt && task.createdAt && (
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4 text-gray-500" />
-              <span>Created: {formatDate(task.createdAt)}</span>
-            </div>
+          {task.siteName && (
+            <Badge variant="outline">
+              <Home className="h-3 w-3 mr-1" />
+              {task.siteName}
+            </Badge>
           )}
+          {task.city && (
+            <Badge variant="outline">
+              <Map className="h-3 w-3 mr-1" />
+              {task.city}
+            </Badge>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 px-2"
+            onClick={() => setShowNotes(!showNotes)}
+          >
+            <MessageSquare className="h-3 w-3 mr-1" />
+            {showNotes ? "Hide Notes" : "Show Notes"}
+          </Button>
         </div>
-        {(task.isUrgent || task.isImportant) && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {task.isUrgent && (
-              <div className="flex items-center gap-1 text-orange-500 text-xs bg-orange-50 px-2 py-1 rounded-full">
-                <AlertTriangle className="h-3 w-3" />
-                <span>Urgent</span>
+
+        {showNotes && (
+          <div className="mt-4 border-t pt-4">
+            <div className="space-y-4">
+              {/* Add Note Section */}
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Add a note..."
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  className="min-h-[100px]"
+                />
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleAddNote}
+                    disabled={!newNote.trim()}
+                  >
+                    Add Note
+                  </Button>
+                </div>
               </div>
-            )}
-            {task.isImportant && (
-              <div className="flex items-center gap-1 text-blue-500 text-xs bg-blue-50 px-2 py-1 rounded-full">
-                <CheckSquare className="h-3 w-3" />
-                <span>Important</span>
+
+              {/* Notes List */}
+              <div className="space-y-4">
+                {task.notes?.map((note) => (
+                  <div key={note.id} className="space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm">{note.content}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {note.createdBy} • {new Date(note.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
           </div>
         )}
       </CardContent>
-      <CardFooter className="p-4 pt-2 flex flex-wrap gap-2">
-        {isEditing ? (
-          <>
-            <div className="flex items-center gap-2">
-              <Flag className={`h-4 w-4 ${getPriorityColor(priority)}`} />
-              <Select value={priority} onValueChange={handlePriorityChange}>
-                <SelectTrigger className="w-28 h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className={`h-4 w-4 ${getStatusColor(status)}`} />
-              <Select value={status} onValueChange={handleStatusChange}>
-                <SelectTrigger className="w-28 h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todo">To Do</SelectItem>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center gap-1">
-              <Flag className={`h-4 w-4 ${getPriorityColor(priority)}`} />
-              <span className="capitalize">{priority} Priority</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <CheckCircle className={`h-4 w-4 ${getStatusColor(status)}`} />
-              <span className="capitalize">{status.replace("-", " ")}</span>
-            </div>
-          </>
-        )}
-      </CardFooter>
     </Card>
   )
 }

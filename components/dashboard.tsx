@@ -86,21 +86,6 @@ export function Dashboard() {
     { name: "Eliminate", value: tasks.filter((task) => !task.isUrgent && !task.isImportant).length, color: "#94a3b8" },
   ]
 
-  // Category distribution data for pie chart
-  const categoryData = [
-    { name: "Purchase", value: tasks.filter((task) => task.category === "purchase").length, color: "#8b5cf6" },
-    { name: "Renewals", value: tasks.filter((task) => task.category === "renewals").length, color: "#06b6d4" },
-    {
-      name: "Bill Payments",
-      value: tasks.filter((task) => task.category === "bill-payments").length,
-      color: "#f43f5e",
-    },
-    { name: "Outings", value: tasks.filter((task) => task.category === "outings").length, color: "#10b981" },
-    { name: "Routines", value: tasks.filter((task) => task.category === "routines").length, color: "#f59e0b" },
-    { name: "Family Time", value: tasks.filter((task) => task.category === "family-time").length, color: "#ec4899" },
-    { name: "Uncategorized", value: tasks.filter((task) => !task.category).length, color: "#94a3b8" },
-  ].filter((item) => item.value > 0) // Only show categories with tasks
-
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -136,10 +121,10 @@ export function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>Task Status Distribution</CardTitle>
+            <CardTitle>Task Status</CardTitle>
           </CardHeader>
           <CardContent>
             {totalTasks > 0 ? (
@@ -176,14 +161,16 @@ export function Dashboard() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">No tasks available</div>
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                No tasks available
+              </div>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Task Priority Distribution</CardTitle>
+            <CardTitle>Task Priority</CardTitle>
           </CardHeader>
           <CardContent>
             {totalTasks > 0 ? (
@@ -208,7 +195,7 @@ export function Dashboard() {
                         if (active && payload && payload.length) {
                           return (
                             <div className="bg-background border rounded p-2 shadow-sm">
-                              <p className="font-medium">{payload[0].name} Priority</p>
+                              <p className="font-medium">{payload[0].name}</p>
                               <p>Tasks: {payload[0].value}</p>
                             </div>
                           )
@@ -220,15 +207,16 @@ export function Dashboard() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">No tasks available</div>
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                No tasks available
+              </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Add this card after the priority distribution card */}
         <Card>
           <CardHeader>
-            <CardTitle>Eisenhower Matrix Distribution</CardTitle>
+            <CardTitle>Eisenhower Matrix</CardTitle>
           </CardHeader>
           <CardContent>
             {totalTasks > 0 ? (
@@ -265,52 +253,8 @@ export function Dashboard() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">No tasks available</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Task Categories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {totalTasks > 0 && categoryData.length > 0 ? (
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-background border rounded p-2 shadow-sm">
-                              <p className="font-medium">{payload[0].name}</p>
-                              <p>Tasks: {payload[0].value}</p>
-                            </div>
-                          )
-                        }
-                        return null
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                No categorized tasks available
+                No tasks available
               </div>
             )}
           </CardContent>
